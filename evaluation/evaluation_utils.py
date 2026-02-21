@@ -90,12 +90,12 @@ def get_model_response_file(
     ):
     
     if filename == None:
-        filename = template.replace('{model}',model).replace('{country}',country.replace(' ','_')).replace('{language}',language).replace('{prompt_no}',prompt_no)
+        filename = template.replace('{model}',os.path.basename(model)).replace('{country}',country.replace(' ','_')).replace('{language}',language).replace('{prompt_no}',prompt_no)
         print(filename)
     if data_dir == None:
         assert 'ERROR: No data directory given' 
         
-    model_res_df = pd.read_csv(os.path.join(data_dir,filename),encoding='utf-8')
+    model_res_df = pd.read_csv(os.path.join(data_dir,os.path.basename(model),filename),encoding='utf-8')
     
     return model_res_df
 
