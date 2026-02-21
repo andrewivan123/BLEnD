@@ -11,6 +11,7 @@ import hausastemmer
 # git clone https://github.com/aznlp-disc/stemmer.git, cp word.txt & suffix.txt.
 from stemmer.stemmer import Stemmer as AZStemmer
 from string import punctuation
+import re
 
 # pip install nlp-id
 from nlp_id.lemmatizer import Lemmatizer as IDLemmatizer
@@ -30,7 +31,10 @@ from sparknlp.annotator import *
 from sparknlp.pretrained import PretrainedPipeline
 import sparknlp
 
-from SUSTEM.SUSTEM_S import *
+sys.path.append('./ecsstemmer')
+from ecsstemmer import EcsStemmer
+
+# from SUSTEM.SUSTEM_S import *
 
 import spacy
 
@@ -47,31 +51,43 @@ INDIC_NLP_RESOURCES=os.path.abspath("./indic_nlp_resources")
 sys.path.append(INDIC_NLP_LIB_HOME)
 from indicnlp import common
 from indicnlp import loader
-from indicnlp.tokenize import indic_tokenize  
+from indicnlp.tokenize import indic_tokenize
 
+
+# Module-level singletons — initialized once on first use
+_okt = None
+_az_stemmer = None
+_id_lemmatizer = None
+_pr_lemmatizer = None
+_ar_lemmatizer = None
+_cltk_nlp = None
+_ec_stemmer = None
 
 
 def lemma_check(answer,llm_response,nlp_pipeline,language='Korean'):
+    global _okt, _az_stemmer, _id_lemmatizer, _pr_lemmatizer, _ar_lemmatizer, _cltk_nlp, _ec_stemmer
+
     if answer in llm_response or answer.replace('-',' ') in llm_response or answer.replace(' ','-') in llm_response:
         return True
-    
+
     if language == 'Korean':
-        okt = Okt()
-        answer_tokens = okt.morphs(' '.join([w for w,p in okt.pos(answer) if p!='Josa']),stem=True)
-        llm_tokens = okt.morphs(' '.join([w for w,p in okt.pos(llm_response) if p!='Josa']),stem=True)
-        
+        if _okt is None:
+            _okt = Okt()
+        answer_tokens = _okt.morphs(' '.join([w for w,p in _okt.pos(answer) if p!='Josa']),stem=True)
+        llm_tokens = _okt.morphs(' '.join([w for w,p in _okt.pos(llm_response) if p!='Josa']),stem=True)
+
     elif language == 'Hausa':
         answer_tokens = [hausastemmer.stem(term.strip('-')) for term in answer.split()]
         llm_tokens = [hausastemmer.stem(term.strip('-')) for term in llm_response.split()]
-    
+
     elif language == 'Amharic':
         answer_tokens = [token.result if lemma.result.startswith('_') else lemma.result for token,lemma in zip(nlp_pipeline.fullAnnotate(answer)[0]['lemma'],nlp_pipeline.fullAnnotate(answer)[0]['token'])]
         llm_tokens = [token.result if lemma.result.startswith('_') else lemma.result for token,lemma in zip(nlp_pipeline.fullAnnotate(llm_response)[0]['lemma'],nlp_pipeline.fullAnnotate(llm_response)[0]['token'])]
-        
+
     elif language == 'Azerbaijani':
-        # Instantiate Stemmer object
-        my_stemmer = AZStemmer()
-        
+        if _az_stemmer is None:
+            _az_stemmer = AZStemmer()
+
         def stem_words(my_text):
             my_text=my_text.replace("İ", "I")
             my_text=my_text.replace("“", "")
@@ -82,56 +98,70 @@ def lemma_check(answer,llm_response,nlp_pipeline,language='Korean'):
             my_words=[]
             for word in my_text:
                 my_words.append(''.join(c for c in word if (c not in punctuation) or (c == '-')))
-            # Apply stemming to the list of words
-            my_words = my_stemmer.stem_words(my_words)
-            # Print words after stemming
+            my_words = _az_stemmer.stem_words(my_words)
             return my_words
-        
+
         answer_tokens = stem_words(answer)
         llm_tokens = stem_words(llm_response)
-    
+
     elif language == 'Indonesian':
-        lemmatizer = IDLemmatizer() 
-        answer_tokens = lemmatizer.lemmatize(answer).split()
-        llm_tokens = lemmatizer.lemmatize(llm_response).split() 
-    
+        if _id_lemmatizer is None:
+            _id_lemmatizer = IDLemmatizer()
+        answer_tokens = _id_lemmatizer.lemmatize(answer).split()
+        llm_tokens = _id_lemmatizer.lemmatize(llm_response).split()
+
     elif language == 'Persian':
-        lemmatizer = PRLemmatizer()
-        answer_tokens = [lemmatizer.lemmatize(term) for term in answer.split()]
-        llm_tokens = [lemmatizer.lemmatize(term) for term in llm_response.split()]
-        
+        if _pr_lemmatizer is None:
+            _pr_lemmatizer = PRLemmatizer()
+        answer_tokens = [_pr_lemmatizer.lemmatize(term) for term in answer.split()]
+        llm_tokens = [_pr_lemmatizer.lemmatize(term) for term in llm_response.split()]
+
     elif language == 'Arabic':
-        lemmatizer = ARLeammatizer()
-        answer_tokens = lemmatizer.lemmatize(answer)
-        llm_tokens = lemmatizer.lemmatize(llm_response) 
-        
+        if _ar_lemmatizer is None:
+            _ar_lemmatizer = ARLeammatizer()
+        answer_tokens = _ar_lemmatizer.lemmatize(answer)
+        llm_tokens = _ar_lemmatizer.lemmatize(llm_response)
+
     elif language == 'Greek':
-        cltk_nlp = NLP(language="grc", suppress_banner=True)
-        answer_tokens = cltk_nlp.analyze(text=answer).lemmata
-        llm_tokens = cltk_nlp.analyze(text=llm_response).lemmata
-        
+        if _cltk_nlp is None:
+            _cltk_nlp = NLP(language="grc", suppress_banner=True)
+        answer_tokens = _cltk_nlp.analyze(text=answer).lemmata
+        llm_tokens = _cltk_nlp.analyze(text=llm_response).lemmata
+
     elif language == 'Spanish':
         answer_tokens = [lemma.result for lemma in nlp_pipeline.fullAnnotate(answer)[0]['lemma']]
         llm_tokens = [lemma.result for lemma in nlp_pipeline.fullAnnotate(llm_response)[0]['lemma']]
-        
-    elif language == 'Sundanese':
-        stemmer = EcsStemmer()
-        answer_tokens = [stemmer.stemmingProcess(word.replace('(','').replace(')','')) for word in answer.split()]
-        llm_tokens = [stemmer.stemmingProcess(word.replace('(','').replace(')','')) for word in llm_response.split()]
 
-        
+    elif language == 'Sundanese':
+        if _ec_stemmer is None:
+            _ec_stemmer = EcsStemmer()
+
+        def normalize_sundanese_token(word):
+            normalized = word.replace('(', '').replace(')', '')
+            return normalized
+
+        def unescape_regex_token(word):
+            return re.sub(r'\\([.^$*+?{}\[\]|()\\-])', r'\1', word)
+
+        answer_raw_tokens = [normalize_sundanese_token(word) for word in answer.split()]
+        llm_raw_tokens = [normalize_sundanese_token(word) for word in llm_response.split()]
+
+        answer_tokens = [unescape_regex_token(_ec_stemmer.stemmWord(re.escape(word))) for word in answer_raw_tokens if word]
+        llm_tokens = [unescape_regex_token(_ec_stemmer.stemmWord(re.escape(word))) for word in llm_raw_tokens if word]
+
+
     elif language == 'English':
         answer_tokens = [token.lemma_ for token in nlp_pipeline(answer)]
         llm_tokens = [token.lemma_ for token in nlp_pipeline(llm_response)]
-        
+
     elif language == 'Chinese':
         answer_tokens = list(jieba.cut(answer))
         llm_tokens = list(jieba.cut(llm_response))
-        
+
     elif language == 'Assamese':
         common.set_resources_path(INDIC_NLP_RESOURCES)
         loader.load()
-        
+
         answer_tokens = indic_tokenize.trivial_tokenize(answer)
         llm_tokens = indic_tokenize.trivial_tokenize(llm_response)
         
