@@ -70,8 +70,10 @@ cd evaluation
 pip install konlpy
 pip install hausastemmer
 git clone https://github.com/aznlp-disc/stemmer.git,
-cp stemmer/word.txt ./evaluation
-cp stemmer/suffix.txt ./evaluation
+cp stemmer/words.txt .
+cp stemmer/suffix.txt .
+git clone https://github.com/ariefrahmansyah/ecsstemmer
+cp ecsstemmer/rootwords.txt .
 pip install nlp-id
 pip install hazm
 pip install qalsadi
@@ -83,60 +85,27 @@ git clone https://github.com/anoopkunchukuttan/indic_nlp_resources.git
 ```
 
 ### Code Execution Details
-The code for retrieving answers from LLMs for the short-answer questions is provided at `model_inference.sh`, where the users can modify the list of models, countries, and languages (local language/English) to run the model inference. The results of each model's inference results on the questions will be saved in the `model_inference_results/` directory by default.
+The code for retrieving answers from LLMs for the short-answer questions is provided at `model_inference_vllm.sh`, which uses vLLM for efficient batched GPU inference. Edit the `MODEL_KEYS` array inside the script to select the models to run. Results are saved to `model_inference_results_vllm/` by default.
 
 ```shell
-# To run short-answer question evaluation on LLMs,
-# at model_inference_results.sh, change the following by putting in your own API keys and settings:
-
-export CUDA_VISIBLE_DEVICES=""
-
-export HF_TOKEN="" 
-export COHERE_API_KEY=""
-export OPENAI_API_KEY=""
-export OPENAI_ORG_ID=""
-export AZURE_OPENAI_API_KEY=""
-export AZURE_OPENAI_API_VER=""
-export AZURE_OPENAI_API_ENDPT=""
-export CLAUDE_API_KEY=""
-export GOOGLE_API_KEY=""
-export GOOGLE_APPLICATION_CREDENTIALS=""
-export GOOGLE_PROJECT_NAME=""
-
-# Then, run the code below:
-$ bash model_inference_results.sh
+# Edit MODEL_KEYS and OVERWRITE inside model_inference_vllm.sh, then run:
+$ bash model_inference_vllm.sh
 ```
 
-Multiple-choice questions and answers are generated through the codes that can be found at `evaluation/multiple_choice_generation.sh`. 
+Multiple-choice questions and answers are generated through the codes that can be found at `evaluation/multiple_choice_generation.sh`.
 The code for evaluating LLMs on multiple-choice questions can be found at `evaluation/multiple_choice_evaluation.sh`, where the users can modify the list of models to evaluate on.
 ```shell
 $ cd evaluation
-
-# To run multiple-choice question evaluation on LLMs,
-# at multiple_choice_evaluation.sh, change the following:
-
-export CUDA_VISIBLE_DEVICES=""
-
-export HF_TOKEN="" 
-export COHERE_API_KEY=""
-export OPENAI_API_KEY=""
-export OPENAI_ORG_ID=""
-export AZURE_OPENAI_API_KEY=""
-export AZURE_OPENAI_API_VER=""
-export AZURE_OPENAI_API_ENDPT=""
-export CLAUDE_API_KEY=""
-export GOOGLE_API_KEY=""
-export GOOGLE_APPLICATION_CREDENTIALS=""
-export GOOGLE_PROJECT_NAME=""
-
-# Then, run the code below:
 $ bash multiple_choice_evaluation.sh
 ```
 
-To calculate the scores for both short-answer questions and multiple-choice questions, the users can run `evaluation/evaluate.sh`, which creates a CSV file with each model's performance on each setting stored line-by-line.  
+To calculate the short-answer scores for all countries and languages in a single pass, run `evaluation/evaluate_all.sh`. It creates a CSV file with each model's SEM-B and SEM-W scores stored line-by-line, and automatically skips combinations that have already been evaluated.
 ```shell
 $ cd evaluation
-$ bash evaluate.sh
+$ bash evaluate_all.sh
+
+# To force re-evaluation of already completed entries, add --overwrite to the
+# python call inside evaluate_all.sh.
 ```
 
 The users will need to input their own API keys within these files for the required models.
