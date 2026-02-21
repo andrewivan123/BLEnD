@@ -92,13 +92,6 @@ The code for retrieving answers from LLMs for the short-answer questions is prov
 $ bash model_inference_vllm.sh
 ```
 
-Multiple-choice questions and answers are generated through the codes that can be found at `evaluation/multiple_choice_generation.sh`.
-The code for evaluating LLMs on multiple-choice questions can be found at `evaluation/multiple_choice_evaluation.sh`, where the users can modify the list of models to evaluate on.
-```shell
-$ cd evaluation
-$ bash multiple_choice_evaluation.sh
-```
-
 To calculate the short-answer scores for all countries and languages in a single pass, run `evaluation/evaluate_all.sh`. It creates a CSV file with each model's SEM-B and SEM-W scores stored line-by-line, and automatically skips combinations that have already been evaluated.
 ```shell
 $ cd evaluation
