@@ -10,30 +10,30 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from tqdm.auto import tqdm
-from easydict import EasyDict
+# from easydict import EasyDict
 from collections import defaultdict, Counter
 import pathlib
 import textwrap
 import os.path as osp
 import math
 
-import openai
-from openai import AzureOpenAI,OpenAI
+# import openai
+# from openai import AzureOpenAI,OpenAI
 from transformers import T5Tokenizer, T5ForConditionalGeneration, AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer, LlamaTokenizer, pipeline, AutoConfig, BitsAndBytesConfig
 from transformers.generation.utils import GenerationConfig
 from peft import PeftModel, PeftConfig
 import torch
-import anthropic
+# import anthropic
 from typing import Union
-import google.generativeai as genai
-from google.generativeai.types import safety_types
-from google.oauth2 import service_account
-import vertexai
-from vertexai.language_models import TextGenerationModel
-import anthropic
-from anthropic import HUMAN_PROMPT, AI_PROMPT
-import cohere
-from together import Together
+# import google.generativeai as genai
+# from google.generativeai.types import safety_types
+# from google.oauth2 import service_account
+# import vertexai
+# from vertexai.language_models import TextGenerationModel
+# import anthropic
+# from anthropic import HUMAN_PROMPT, AI_PROMPT
+# import cohere
+# from together import Together
 
 MODEL_PATHS = {
     "gpt-3.5-turbo-0125":"gpt-3.5-turbo-0125",
@@ -87,24 +87,24 @@ def get_tokenizer_model(model_name,model_path,model_cache_dir):
             tokenizer = LlamaTokenizer.from_pretrained(model_path, use_fast=False,token=os.getenv("HF_TOKEN"))
             model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto", 
                                                                 torch_dtype=torch.float16,
-                                                                resume_download=True,
+                                                                # resume_download=True,
                                                                 cache_dir=os.path.join(model_cache_dir,model_path),token=os.getenv("HF_TOKEN"))
         
         elif 'Orion' in model_name or 'polylm' in model_name:
             tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False, trust_remote_code=True)
             model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto", trust_remote_code=True ,torch_dtype=torch.bfloat16,
-                                                                resume_download=True,
+                                                                # resume_download=True,
                                                                 cache_dir=os.path.join(model_cache_dir,model_path))
         
         elif 'aya' in model_name:
             tokenizer = AutoTokenizer.from_pretrained(model_path)
             if '23' in model_name:
                 model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto",token=os.getenv("HF_TOKEN"),
-                                                                resume_download=True,
+                                                                # resume_download=True,
                                                                 cache_dir=os.path.join(model_cache_dir,model_path))
             else:
                 model = AutoModelForSeq2SeqLM.from_pretrained(model_path, device_map="auto",
-                                                                    resume_download=True,
+                                                                    # resume_download=True,
                                                                     cache_dir=os.path.join(model_cache_dir,model_path))
             
         elif 'mala' in model_name.lower():
@@ -117,7 +117,7 @@ def get_tokenizer_model(model_name,model_path,model_cache_dir):
         elif 'mistral' in model_path.lower():
             tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False,token=os.getenv("HF_TOKEN"))
             model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto",
-                                                                resume_download=True,
+                                                                # resume_download=True,
                                                                 cache_dir=os.path.join(model_cache_dir,model_path),token=os.getenv("HF_TOKEN"))
         
         elif 'merak' in model_path.lower():
@@ -125,7 +125,7 @@ def get_tokenizer_model(model_name,model_path,model_cache_dir):
             model = AutoModelForCausalLM.from_pretrained(model_path,
                                                         device_map="auto",
                                                         trust_remote_code=True,
-                                                        resume_download=True,
+                                                        # resume_download=True,
                                                         cache_dir=os.path.join(model_cache_dir,model_path))
 
             tokenizer = LlamaTokenizer.from_pretrained(model_path)
@@ -135,13 +135,13 @@ def get_tokenizer_model(model_name,model_path,model_cache_dir):
             model = AutoModelForCausalLM.from_pretrained(model_path, 
                                                          device_map="auto", 
                                                          trust_remote_code=True,
-                                                         resume_download=True,
+                                                         # resume_download=True,
                                                          cache_dir=os.path.join(model_cache_dir,model_path))
          
         else:
-            tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
+            tokenizer = AutoTokenizer.from_pretrained(model_path)
             model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto",
-                                                                resume_download=True,
+                                                                # resume_download=True,
                                                                 cache_dir=os.path.join(model_cache_dir,model_path))
             
     return tokenizer,model
@@ -575,7 +575,7 @@ def model_inference(prompt,model_path,model,tokenizer,max_length=512):
     
     else:
         input_ids = tokenizer(prompt, return_tensors="pt", return_token_type_ids=False).to(model.device)
-        outputs = model.generate(**input_ids,max_length=max_length)
+        outputs = model.generate(**input_ids,max_length=max_length,do_sample=False)
         result = tokenizer.decode(outputs[0],skip_special_tokens=True)
         result = result.replace(prompt,'').strip()
         
