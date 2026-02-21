@@ -54,13 +54,9 @@ def make_prompt(question, prompt_no, language, _country, prompt_sheet):
 
 
 def format_prompt_for_model(prompt, model_path, tokenizer):
-    """Apply chat template for models that use it; pass raw prompt otherwise."""
-    if any(key in model_path for key in ['Orion', 'Qwen', 'SeaLLM', 'Merak']) or \
-       any(key in model_path.lower() for key in ['mistral', 'c4ai', 'aya-23']):
-        messages = [{"role": "user", "content": prompt}]
-        return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    else:
-        return prompt
+    """Apply chat template for all instruction-tuned models."""
+    messages = [{"role": "user", "content": prompt}]
+    return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
 
 def get_response_from_all():
