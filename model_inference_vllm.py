@@ -127,13 +127,9 @@ def get_response_from_all():
             replace_country_flag = (lang == 'English' and COUNTRY_LANG.get(country) != 'English')
 
             # Auto-detect question column if not explicitly provided
-            if question_col is not None:
-                q_col = question_col
-            elif lang == COUNTRY_LANG.get(country):
-                q_col = 'Translation'
-            elif lang == 'English':
+            if lang == COUNTRY_LANG.get(country):
                 q_col = 'Question'
-            else:
+            elif lang == 'English':
                 q_col = 'Translation'
 
             questions_df = get_questions(country)
