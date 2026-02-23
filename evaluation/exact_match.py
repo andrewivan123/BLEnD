@@ -77,8 +77,10 @@ def lemma_check(answer,llm_response,nlp_pipeline,language='Korean'):
         llm_tokens = _okt.morphs(' '.join([w for w,p in _okt.pos(llm_response) if p!='Josa']),stem=True)
 
     elif language == 'Hausa':
-        answer_tokens = [hausastemmer.stem(term.strip('-')) for term in answer.split()]
-        llm_tokens = [hausastemmer.stem(term.strip('-')) for term in llm_response.split()]
+        answer_tokens = [hausastemmer.stem(t) for term in answer.split()
+                         if not ('-' in (t := term.strip('-')) and len(t.split('-')[-1]) < 4)]
+        llm_tokens = [hausastemmer.stem(t) for term in llm_response.split()
+                      if not ('-' in (t := term.strip('-')) and len(t.split('-')[-1]) < 4)]
 
     elif language == 'Amharic':
         answer_tokens = [token.result if lemma.result.startswith('_') else lemma.result for token,lemma in zip(nlp_pipeline.fullAnnotate(answer)[0]['lemma'],nlp_pipeline.fullAnnotate(answer)[0]['token'])]
