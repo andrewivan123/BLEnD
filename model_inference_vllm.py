@@ -107,6 +107,7 @@ def get_response_from_all():
             gpu_memory_utilization=0.9,
             enable_prefix_caching=True,
             tensor_parallel_size=4,
+            attention_backend='FLASHINFER'
         )
 
         # ------------------------------------------------------------------
